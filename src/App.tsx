@@ -1,24 +1,33 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { useEffect } from "react";
+import logo from "./logo.svg";
+import "./App.css";
+import { Route, Routes, useLocation, useNavigate } from "react-router-dom";
+import Loading from "./Components/Loading/Loading";
+import Page404 from "./Components/Page404/Page404";
+import { MOVIE_LIST } from "./routes";
 
 function App() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  // useEffect
+  const PageMovieListing = React.lazy(() => import("./Page/PageMovieListing"));
+
+  useEffect(() => {
+    setTimeout(() => {
+      if (location.pathname === "/") {
+        navigate(MOVIE_LIST);
+      }
+    }, 500);
+  }, []);
+
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <React.Suspense fallback={<Loading />}>
+        <Routes>
+          <Route path={"*"} element={<Page404 />} />
+          <Route path={MOVIE_LIST} element={<PageMovieListing />} />
+        </Routes>
+      </React.Suspense>
     </div>
   );
 }
