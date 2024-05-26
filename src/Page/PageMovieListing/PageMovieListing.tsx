@@ -1,8 +1,9 @@
-import React from "react";
+import React, { ReactNode, useEffect, useRef, useState } from "react";
 import { useHref } from "react-router-dom";
 import movieFixLogo from "../../assets/custom-moviefix-logo.svg";
 import Button from "../../Components/Button/Button";
-import { BUTTON_VARIANT } from "../../constants";
+import { BUTTON_VARIANT, ICON_BUTTON_TYPE } from "../../constants";
+import IconButton from "../../Components/IconButton/IconButton";
 
 const genres = [
   {
@@ -88,18 +89,70 @@ const PageMovieListing = () => {
     Use State
     -----
   */
+  const [isLeftScrollButtonPressed, setIsLeftScrollButtonPressed] =
+    useState(false);
+  const [isRightScrollButtonPressed, setIsRightScrollButtonPressed] =
+    useState(false);
+
+  const filterContainerRef = useRef<HTMLDivElement>(null);
   /*
     -----
     Use Effect
     -----
   */
 
+  //   useEffect(() => {
+  //     while (isLeftScrollButtonPressed) {
+  //       if (filterContainerRef.current) {
+  //         filterContainerRef.current.scrollLeft -= 1;
+  //       }
+  //     }
+  //   }, [isLeftScrollButtonPressed]);
+
+  //   useEffect(() => {
+  //     while (isRightScrollButtonPressed) {
+  //       if (filterContainerRef.current) {
+  //         filterContainerRef.current.scrollLeft += 1;
+  //       }
+  //     }
+  //   }, [isRightScrollButtonPressed]);
+
   /*
     -----
     Handlers: Event handler for onChange, onBlur etc
     -----
   */
+  const onScrollLeftForFilter = () => {
+    console.log(filterContainerRef?.current?.scrollLeft, "scrollLeft");
 
+    if (filterContainerRef.current) {
+      filterContainerRef.current.scrollLeft -= 240;
+    }
+  };
+
+  const onPressScrollLeftForFilter = () => {
+    setIsLeftScrollButtonPressed(true);
+  };
+
+  const onReleaseScrollLeftForFilter = () => {
+    setIsLeftScrollButtonPressed(false);
+  };
+
+  const onScrollRightForFilter = () => {
+    console.log(filterContainerRef?.current?.scrollLeft, "scrollRight");
+    if (filterContainerRef.current) {
+      filterContainerRef.current.scrollLeft += 240;
+      filterContainerRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  const onPressScrollRightForFilter = () => {
+    setIsRightScrollButtonPressed(true);
+  };
+
+  const onReleaseScrollRightForFilter = () => {
+    setIsRightScrollButtonPressed(false);
+  };
   /* 
     -----
     Helper Functions:
@@ -119,17 +172,17 @@ const PageMovieListing = () => {
           id="MyPath"
           fill="none"
           stroke="none"
-          stroke-width=".1"
+          strokeWidth=".1"
           d="M 0 5 Q 15 0 30 5"
           pathLength="2"
         />
         <text
-          font-size="5"
+          fontSize="5"
           fill="red"
           fontWeight="bold"
-          letter-spacing="0.8"
-          dominant-baseline="hanging"
-          text-anchor="middle"
+          letterSpacing="0.8"
+          dominantBaseline="hanging"
+          textAnchor="middle"
           className="title"
         >
           <textPath href="#MyPath" startOffset="1">
@@ -147,11 +200,34 @@ const PageMovieListing = () => {
         </div>
         {/* red color #ff4747 */}
         <div className="flex">
-          {genres.map((genre: any, key: number) => (
-            <div className="w-fit mr-1">
-              <Button label={genre.name} variant={BUTTON_VARIANT.PRIMARY} />
-            </div>
-          ))}
+          <div className="w-24 h-24 mr-1">
+            <IconButton
+              type={ICON_BUTTON_TYPE.LEFT_ARROW}
+              onClick={onScrollLeftForFilter}
+              onMouseDown={onPressScrollLeftForFilter}
+              onMouseUp={onReleaseScrollLeftForFilter}
+              imgClassName="w-24 h-24"
+            />
+          </div>
+          <div
+            className="flex overflow-x-auto filter-container pb-1"
+            ref={filterContainerRef}
+          >
+            {genres.map((genre: any, key: number) => (
+              <div className="w-fit mr-1 flex-shrink-0 " key={key}>
+                <Button label={genre.name} variant={BUTTON_VARIANT.PRIMARY} />
+              </div>
+            ))}
+          </div>
+          <div className=" w-24 h-24 ml-1">
+            <IconButton
+              type={ICON_BUTTON_TYPE.RIGHT_ARROW}
+              onClick={onScrollRightForFilter}
+              onMouseDown={onPressScrollRightForFilter}
+              onMouseUp={onReleaseScrollRightForFilter}
+              imgClassName="w-24 h-24"
+            />
+          </div>
         </div>
       </div>
     );
