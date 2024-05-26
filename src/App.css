@@ -59,6 +59,11 @@ svg {
   height: 1.5rem;
 }
 
+/* Object fit */
+.object-contain {
+  object-fit: contain;
+}
+
 /* margin */
 
 .mb-1 {
@@ -167,4 +172,19 @@ svg {
 }
 .filter-container::-webkit-scrollbar {
   display: none; /* Safari and Chrome */
+}
+
+/* movie list grid  */
+.movie-list-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
+  padding: 1.5rem;
+}
+
+.movie-card {
+  background-color: #f0f0f0;
+  padding: 20px;
+  border: 1px solid #ccc;
+  text-align: center;
 }

@@ -11,3 +11,9 @@ export const ICON_BUTTON_TYPE: Record<TIconButtonType, TIconButtonType> = {
 };
 
 export const TMDB_API_KEY = "2dca580c2a14b55200e784d157207b4d";
+
+export const MOVIE_CREW_JOB = {
+  Director: "Director",
+};
+
+export const IMG_BASE_URL = "http://image.tmdb.org/t/p";
