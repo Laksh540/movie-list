@@ -23,6 +23,12 @@ svg {
   display: block;
 }
 
+/* flex  */
+
+.flex-shrink-0 {
+  flex-shrink: 0;
+}
+
 /* Width */
 .w-fit {
   width: fit-content;
@@ -33,6 +39,20 @@ svg {
 
 .w-140 {
   width: 8.74rem;
+}
+
+.w-24 {
+  width: 1.5rem;
+}
+
+/* Height */
+
+.h-full {
+  height: 100%;
+}
+
+.h-24 {
+  height: 1.5rem;
 }
 
 /* margin */
@@ -46,6 +66,10 @@ svg {
 }
 
 .mr-1 {
+  margin-right: 0.75rem;
+}
+
+.ml-1 {
   margin-right: 0.75rem;
 }
 
@@ -63,12 +87,20 @@ svg {
   padding-right: 0.75rem;
 }
 
+.pb-1 {
+  padding-bottom: 0.75rem;
+}
+
 /* Text color */
 .text-white {
   color: white;
 }
 
 /* Border */
+
+.border-none {
+  border: none;
+}
 .border-1 {
   border: 1px solid;
 }
@@ -94,6 +126,10 @@ svg {
 }
 
 /*background color */
+.bg-transparent {
+  background-color: transparent;
+}
+
 .bg-dark-gray {
   background-color: #4c4c4c;
 }
@@ -107,4 +143,20 @@ svg {
 }
 /* #4c4c4c */
 
-/* Button component */
+/*  image filter */
+.filter-invert-1 {
+  filter: invert(1);
+}
+/* overflow */
+.overflow-x-auto {
+  overflow-x: auto;
+}
+
+.filter-container {
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+  scrollbar-width: none; /* Firefox */
+  scroll-behavior: "smooth";
+}
+.filter-container::-webkit-scrollbar {
+  display: none; /* Safari and Chrome */
+}
