@@ -43,12 +43,7 @@ const IconButton = (props: IButtonProps) => {
   };
 
   return (
-    <button
-      className={getClassName()}
-      onClick={onClick}
-      onMouseDown={onMouseDown}
-      onMouseUp={onMouseUp}
-    >
+    <button className={getClassName()} onClick={onClick}>
       <img src={getImgUrl()} className={imgClassName} />
     </button>
   );

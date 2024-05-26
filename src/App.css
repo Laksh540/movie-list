@@ -29,6 +29,10 @@ svg {
   flex-shrink: 0;
 }
 
+.justify-center {
+  justify-content: center;
+}
+
 /* Width */
 .w-fit {
   width: fit-content;
@@ -89,6 +93,10 @@ svg {
 
 .pb-1 {
   padding-bottom: 0.75rem;
+}
+
+.pb-2 {
+  padding-bottom: 1.5rem;
 }
 
 /* Text color */

@@ -4,118 +4,66 @@ import movieFixLogo from "../../assets/custom-moviefix-logo.svg";
 import Button from "../../Components/Button/Button";
 import { BUTTON_VARIANT, ICON_BUTTON_TYPE } from "../../constants";
 import IconButton from "../../Components/IconButton/IconButton";
+import MovieService from "../../Services/MovieService";
 
-const genres = [
-  {
-    id: 28,
-    name: "Action",
-  },
-  {
-    id: 12,
-    name: "Adventure",
-  },
-  {
-    id: 16,
-    name: "Animation",
-  },
-  {
-    id: 35,
-    name: "Comedy",
-  },
-  {
-    id: 80,
-    name: "Crime",
-  },
-  {
-    id: 99,
-    name: "Documentary",
-  },
-  {
-    id: 18,
-    name: "Drama",
-  },
-  {
-    id: 10751,
-    name: "Family",
-  },
-  {
-    id: 14,
-    name: "Fantasy",
-  },
-  {
-    id: 36,
-    name: "History",
-  },
-  {
-    id: 27,
-    name: "Horror",
-  },
-  {
-    id: 10402,
-    name: "Music",
-  },
-  {
-    id: 9648,
-    name: "Mystery",
-  },
-  {
-    id: 10749,
-    name: "Romance",
-  },
-  {
-    id: 878,
-    name: "Science Fiction",
-  },
-  {
-    id: 10770,
-    name: "TV Movie",
-  },
-  {
-    id: 53,
-    name: "Thriller",
-  },
-  {
-    id: 10752,
-    name: "War",
-  },
-  {
-    id: 37,
-    name: "Western",
-  },
-];
+interface IGenres {
+  id: number;
+  name: string;
+}
+
+interface IPageObj {
+  allGenres: IGenres[];
+  allGenresLoading: boolean;
+}
+
+const initialPageObj: IPageObj = {
+  allGenres: [],
+  allGenresLoading: false,
+};
 const PageMovieListing = () => {
   /*
     -----
     Use State
     -----
   */
-  const [isLeftScrollButtonPressed, setIsLeftScrollButtonPressed] =
-    useState(false);
-  const [isRightScrollButtonPressed, setIsRightScrollButtonPressed] =
-    useState(false);
-
+  const [pageObj, setPageObj] = useState<IPageObj>({ ...initialPageObj });
   const filterContainerRef = useRef<HTMLDivElement>(null);
+
   /*
     -----
     Use Effect
     -----
   */
+  useEffect(() => {
+    getAllGenres();
+  }, []);
 
-  //   useEffect(() => {
-  //     while (isLeftScrollButtonPressed) {
-  //       if (filterContainerRef.current) {
-  //         filterContainerRef.current.scrollLeft -= 1;
-  //       }
-  //     }
-  //   }, [isLeftScrollButtonPressed]);
-
-  //   useEffect(() => {
-  //     while (isRightScrollButtonPressed) {
-  //       if (filterContainerRef.current) {
-  //         filterContainerRef.current.scrollLeft += 1;
-  //       }
-  //     }
-  //   }, [isRightScrollButtonPressed]);
+  /*
+    -----
+    Service
+    -----
+  */
+  const getAllGenres = async () => {
+    setPageObj((prevObj) => ({
+      ...prevObj,
+      allGenresLoading: true,
+    }));
+    try {
+      const res: any = await MovieService.getGenresList();
+      console.log("res ", res);
+      setPageObj((prevObj) => ({
+        ...prevObj,
+        allGenres: res?.genres ?? [],
+        allGenresLoading: false,
+      }));
+    } catch (error) {
+      console.log("error ", error);
+      setPageObj((prevObj) => ({
+        ...prevObj,
+        allGenresLoading: false,
+      }));
+    }
+  };
 
   /*
     -----
@@ -130,14 +78,6 @@ const PageMovieListing = () => {
     }
   };
 
-  const onPressScrollLeftForFilter = () => {
-    setIsLeftScrollButtonPressed(true);
-  };
-
-  const onReleaseScrollLeftForFilter = () => {
-    setIsLeftScrollButtonPressed(false);
-  };
-
   const onScrollRightForFilter = () => {
     console.log(filterContainerRef?.current?.scrollLeft, "scrollRight");
     if (filterContainerRef.current) {
@@ -146,18 +86,14 @@ const PageMovieListing = () => {
     }
   };
 
-  const onPressScrollRightForFilter = () => {
-    setIsRightScrollButtonPressed(true);
-  };
-
-  const onReleaseScrollRightForFilter = () => {
-    setIsRightScrollButtonPressed(false);
-  };
   /* 
     -----
     Helper Functions:
     -----
   */
+  // const sleep = (time: number) => {
+  //   return new Promise((resolve) => setTimeout(resolve, time));
+  // };
 
   /*
     -----
@@ -192,6 +128,44 @@ const PageMovieListing = () => {
       </svg>
     );
   };
+
+  const renderAllGenres = () => {
+    if (pageObj?.allGenresLoading) {
+      return (
+        <div className="flex justify-center pb-2 ">
+          <div className="">Genres Loading ...</div>
+        </div>
+      );
+    }
+    return (
+      <div className="flex">
+        <div className="w-24 h-24 mr-1">
+          <IconButton
+            type={ICON_BUTTON_TYPE.LEFT_ARROW}
+            onClick={onScrollLeftForFilter}
+            imgClassName="w-24 h-24"
+          />
+        </div>
+        <div
+          className="flex overflow-x-auto filter-container pb-1"
+          ref={filterContainerRef}
+        >
+          {pageObj?.allGenres.map((genre: IGenres) => (
+            <div className="w-fit mr-1 flex-shrink-0 " key={genre?.id}>
+              <Button label={genre.name} variant={BUTTON_VARIANT.PRIMARY} />
+            </div>
+          ))}
+        </div>
+        <div className=" w-24 h-24 ml-1">
+          <IconButton
+            type={ICON_BUTTON_TYPE.RIGHT_ARROW}
+            onClick={onScrollRightForFilter}
+            imgClassName="w-24 h-24"
+          />
+        </div>
+      </div>
+    );
+  };
   const renderHeader = () => {
     return (
       <div className="bg-dark-gray px-1">
@@ -199,36 +173,7 @@ const PageMovieListing = () => {
           <div className=" w-140">{renderCustomMovifixLogo()}</div>
         </div>
         {/* red color #ff4747 */}
-        <div className="flex">
-          <div className="w-24 h-24 mr-1">
-            <IconButton
-              type={ICON_BUTTON_TYPE.LEFT_ARROW}
-              onClick={onScrollLeftForFilter}
-              onMouseDown={onPressScrollLeftForFilter}
-              onMouseUp={onReleaseScrollLeftForFilter}
-              imgClassName="w-24 h-24"
-            />
-          </div>
-          <div
-            className="flex overflow-x-auto filter-container pb-1"
-            ref={filterContainerRef}
-          >
-            {genres.map((genre: any, key: number) => (
-              <div className="w-fit mr-1 flex-shrink-0 " key={key}>
-                <Button label={genre.name} variant={BUTTON_VARIANT.PRIMARY} />
-              </div>
-            ))}
-          </div>
-          <div className=" w-24 h-24 ml-1">
-            <IconButton
-              type={ICON_BUTTON_TYPE.RIGHT_ARROW}
-              onClick={onScrollRightForFilter}
-              onMouseDown={onPressScrollRightForFilter}
-              onMouseUp={onReleaseScrollRightForFilter}
-              imgClassName="w-24 h-24"
-            />
-          </div>
-        </div>
+        {renderAllGenres()}
       </div>
     );
   };
