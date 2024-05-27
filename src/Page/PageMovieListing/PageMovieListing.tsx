@@ -17,14 +17,16 @@ interface IGenres {
 }
 
 interface IMovieDetails {
-  id: string;
+  id: number;
   title: string;
   poster_path: string;
-  genre_ids: number[];
+  genres: string[];
   overview: string;
 }
 
 interface ISelectedMovieCastAndDirector {
+  isSelected?: boolean;
+  movieId?: number;
   cast: string[];
   director: string[];
 }
@@ -43,6 +45,7 @@ const initialPageObj: IPageObj = {
   movieList: [],
   movieListLoading: false,
   selectedMovieCastAndDirector: {
+    isSelected: false,
     cast: [],
     director: [],
   },
@@ -55,7 +58,10 @@ const PageMovieListing = () => {
     -----
   */
   const [pageObj, setPageObj] = useState<IPageObj>({ ...initialPageObj });
+  const [timeoutLocal, setTimeOutLocal] = useState<any>(undefined);
   const filterContainerRef = useRef<HTMLDivElement>(null);
+
+  const movieCardRef = useRef<any[]>([]);
 
   /*
     -----
@@ -64,9 +70,22 @@ const PageMovieListing = () => {
   */
   useEffect(() => {
     getAllGenres();
-    getMovies();
-    getMovieCredits();
   }, []);
+
+  useEffect(() => {
+    if (pageObj?.allGenres.length > 0) {
+      getMovies();
+      // getMovieCredits();
+    }
+  }, [pageObj?.allGenres]);
+
+  useEffect(() => {
+    if (pageObj?.selectedMovieCastAndDirector.movieId) {
+      debounce(() => {
+        getMovieCredits(pageObj?.selectedMovieCastAndDirector?.movieId ?? 0);
+      }, 1000);
+    }
+  }, [pageObj?.selectedMovieCastAndDirector.movieId]);
 
   /*
     -----
@@ -107,7 +126,7 @@ const PageMovieListing = () => {
       console.log("res for movie list", res);
       setPageObj((prevObj) => ({
         ...prevObj,
-        movieList: res?.results ?? [],
+        movieList: getMovieListData(res?.results),
         movieListLoading: false,
       }));
     } catch (error) {
@@ -119,17 +138,25 @@ const PageMovieListing = () => {
     }
   };
 
-  const getMovieCredits = async () => {
+  const getMovieCredits = async (movieId: number) => {
     setPageObj((prevObj) => ({
       ...prevObj,
       selectedMovieCastAndDirectorLoading: true,
+      selectedMovieCastAndDirector: {
+        ...prevObj.selectedMovieCastAndDirector,
+        isSelected: true,
+      },
     }));
     try {
-      const res: any = await MovieService.getMovieCredits(940721);
+      const res: any = await MovieService.getMovieCredits(movieId);
       console.log("res for movie Credits", res);
       setPageObj((prevObj) => ({
         ...prevObj,
-        selectedMovieCastAndDirector: { ...getCastAndDirector(res) },
+        selectedMovieCastAndDirector: {
+          ...prevObj.selectedMovieCastAndDirector,
+          movieId: movieId,
+          ...getCastAndDirectorData(res),
+        },
         selectedMovieCastAndDirectorLoading: false,
       }));
     } catch (error) {
@@ -158,7 +185,20 @@ const PageMovieListing = () => {
     console.log(filterContainerRef?.current?.scrollLeft, "scrollRight");
     if (filterContainerRef.current) {
       filterContainerRef.current.scrollLeft += 240;
-      filterContainerRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  const onShowAdditionalMovieDetails = (movie: IMovieDetails) => {
+    if (movie?.id !== pageObj?.selectedMovieCastAndDirector?.movieId) {
+      setPageObj((prevPageObj) => ({
+        ...prevPageObj,
+        selectedMovieCastAndDirector: {
+          ...prevPageObj.selectedMovieCastAndDirector,
+          movieId: movie?.id,
+          cast: [],
+          director: [],
+        },
+      }));
     }
   };
 
@@ -167,10 +207,37 @@ const PageMovieListing = () => {
     Helper Functions:
     -----
   */
+
+  const debounce = (func: () => void, delay: number) => {
+    clearTimeout(timeoutLocal);
+    setTimeOutLocal(setTimeout(func, delay));
+  };
   // const sleep = (time: number) => {
   //   return new Promise((resolve) => setTimeout(resolve, time));
   // };
-  const getCastAndDirector = (data: any): ISelectedMovieCastAndDirector => {
+
+  const getMovieListData = (data: any): IMovieDetails[] => {
+    // data;
+    let movies: IMovieDetails[] = [];
+    data.forEach((record: any) => {
+      let genres: string[] = [];
+      for (const genreId of record?.genre_ids) {
+        const genre = pageObj?.allGenres?.find((item) => item.id === genreId);
+        genres.push(genre?.name ?? "");
+      }
+
+      movies.push({
+        id: record?.id,
+        title: record?.title,
+        poster_path: record?.poster_path,
+        genres: genres,
+        overview: record?.overview,
+      });
+    });
+    return movies;
+  };
+
+  const getCastAndDirectorData = (data: any): ISelectedMovieCastAndDirector => {
     let castList: string[] = [];
     let directors: string[] = [];
     data?.cast?.forEach((record: any) => {
@@ -270,16 +337,108 @@ const PageMovieListing = () => {
       </div>
     );
   };
+
+  const renderMovieGenres = (movie: IMovieDetails) => {
+    //  forof
+    return movie?.genres.map((genre, index: number) => (
+      <div key={index} className="mr-1">
+        &#x2022;<span className="text-sm">{genre}</span>
+      </div>
+    ));
+  };
+
+  const renderCasteAndDirector = (movie: IMovieDetails) => {
+    if (
+      !(
+        movie.id === pageObj.selectedMovieCastAndDirector.movieId &&
+        pageObj.selectedMovieCastAndDirector.isSelected
+      )
+    ) {
+      return <></>;
+    }
+    if (pageObj.selectedMovieCastAndDirectorLoading) {
+      return <div className=" h-100 text-sm">Loading...</div>;
+    }
+    return (
+      <div className="h-100 overflow-y-auto">
+        <div>
+          <div className="text-left mb-0_5">
+            <span className="text-xs  ">Caste :</span>
+          </div>
+          <div className="   mb-1 flex flex-wrap  ">
+            {pageObj?.selectedMovieCastAndDirector?.cast?.map(
+              (name: string, index: number) => (
+                <div className="text-left text-xs" key={index}>{`${
+                  index + 1 ===
+                  pageObj?.selectedMovieCastAndDirector?.cast?.length
+                    ? name
+                    : `${name} ,`
+                } `}</div>
+              )
+            )}
+          </div>
+          <div className="text-left mb-0_5 ">
+            <span className="text-xs ">Director :</span>
+          </div>
+          <div className=" text-left text-xs  mb-1   ">
+            {pageObj?.selectedMovieCastAndDirector?.director?.map(
+              (name: string, index: number) => (
+                <div>{`${
+                  index + 1 ===
+                  pageObj?.selectedMovieCastAndDirector?.director?.length
+                    ? name
+                    : `${name} ,`
+                } `}</div>
+              )
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
   const renderMovies = () => {
     return (
       <div>
         <div className="movie-list-grid">
-          {pageObj?.movieList?.map((movie: IMovieDetails) => (
-            <div className="movie-card">
+          {pageObj?.movieList?.map((movie: IMovieDetails, index: number) => (
+            <div
+              className="movie-card"
+              // ref={(ref) => {
+              //   movieCardRef.current[index] = ref;
+              // }}
+              key={movie.id}
+              onClick={() => onShowAdditionalMovieDetails(movie)}
+            >
               <img
                 src={`${IMG_BASE_URL}/w500${movie?.poster_path}`}
                 className="object-contain w-full h-full"
               />
+              <div
+                className={`absolute  left-0 right-0 bottom-0  ${
+                  movie.id === pageObj.selectedMovieCastAndDirector.movieId &&
+                  pageObj.selectedMovieCastAndDirector.isSelected
+                    ? " bg-white text-mid-dark-gray p-1"
+                    : "text-gray-light"
+                }`}
+              >
+                <div className=" text-left text-sm font-bold mb-1   ">
+                  {movie?.title}
+                </div>
+                <div className=" text-left text-sm flex flex-wrap  mb-1">
+                  {renderMovieGenres(movie)}
+                </div>
+                <div
+                  className={`text-left text-xs mb-1 ${
+                    movie.id === pageObj.selectedMovieCastAndDirector.movieId &&
+                    pageObj.selectedMovieCastAndDirector.isSelected
+                      ? ""
+                      : "overview-truncate"
+                  }`}
+                >
+                  {movie?.overview}
+                </div>
+                {renderCasteAndDirector(movie)}
+              </div>
             </div>
           ))}
         </div>

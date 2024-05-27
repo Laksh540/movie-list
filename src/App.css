@@ -14,6 +14,29 @@ svg {
   font-family: "Inter", sans-serif;
 } */
 
+/* position */
+
+.relative {
+  position: relative;
+}
+
+.absolute {
+  position: absolute;
+}
+
+/* absolute */
+.left-0 {
+  left: 0;
+}
+
+.right-0 {
+  right: 0;
+}
+
+.bottom-0 {
+  bottom: 0;
+}
+
 /* Display  */
 .flex {
   display: flex;
@@ -23,7 +46,15 @@ svg {
   display: block;
 }
 
+.hidden {
+  display: none;
+}
+
 /* flex  */
+
+.flex-wrap {
+  flex-wrap: wrap;
+}
 
 .flex-shrink-0 {
   flex-shrink: 0;
@@ -59,12 +90,24 @@ svg {
   height: 1.5rem;
 }
 
+.h-100 {
+  height: 6.25rem;
+}
+
+.h-250 {
+  height: 15.625rem;
+}
+
 /* Object fit */
 .object-contain {
   object-fit: contain;
 }
 
 /* margin */
+
+.mb-0_5 {
+  margin-bottom: 0.375rem;
+}
 
 .mb-1 {
   margin-bottom: 0.75rem;
@@ -80,6 +123,10 @@ svg {
 
 .ml-1 {
   margin-right: 0.75rem;
+}
+
+.mt-1 {
+  margin-top: 0.75rem;
 }
 
 /* padding */
@@ -107,6 +154,36 @@ svg {
 /* Text color */
 .text-white {
   color: white;
+}
+
+.text-gray-light {
+  color: #ffffffe6;
+}
+
+.text-mid-dark-gray {
+  color: #737373;
+}
+
+/* Text align */
+.text-left {
+  text-align: left;
+}
+
+/* font size */
+.text-sm {
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.text-xs {
+  font-size: 10px;
+  line-height: 16px;
+}
+
+/* font bold */
+
+.font-bold {
+  font-weight: bold;
 }
 
 /* Border */
@@ -143,6 +220,10 @@ svg {
   background-color: transparent;
 }
 
+.bg-white {
+  background-color: white;
+}
+
 .bg-dark-gray {
   background-color: #4c4c4c;
 }
@@ -161,6 +242,10 @@ svg {
   filter: invert(1);
 }
 /* overflow */
+
+.overflow-y-auto {
+  overflow-y: auto;
+}
 .overflow-x-auto {
   overflow-x: auto;
 }
@@ -183,8 +268,31 @@ svg {
 }
 
 .movie-card {
-  background-color: #f0f0f0;
-  padding: 20px;
-  border: 1px solid #ccc;
+  background-color: transparent;
+  /* padding: 20px; */
+  border: none;
   text-align: center;
+  position: relative;
+  /* height: fit-content; */
+
+  &::before {
+    content: "";
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    left: 0;
+    top: 0;
+    background: linear-gradient(transparent 200px, black);
+  }
+  .overview-truncate {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
 }
+/* 
+.movie-card:hover {
+  width: 400px;
+  transition-delay: 3s;
+} */
