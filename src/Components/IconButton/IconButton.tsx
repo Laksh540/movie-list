@@ -6,6 +6,7 @@ import {
 } from "../../constants";
 import leftArrow from "../../assets/left-arrow.png";
 import rightArrow from "../../assets/right-arrow.png";
+import close from "../../assets/close.png";
 import { log } from "console";
 
 interface IButtonProps {
@@ -23,6 +24,10 @@ const BUTTON_TYPES = {
   RIGHT_ARROW: {
     icon: rightArrow,
     className: " filter-invert-1 ",
+  },
+  CLOSE: {
+    icon: close,
+    className: "  ",
   },
 };
 const IconButton = (props: IButtonProps) => {

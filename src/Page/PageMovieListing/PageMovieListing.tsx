@@ -202,6 +202,18 @@ const PageMovieListing = () => {
     }
   };
 
+  const onCloseSelectedMovie = () => {
+    setPageObj((prevPageObj) => ({
+      ...prevPageObj,
+      selectedMovieCastAndDirector: {
+        ...prevPageObj.selectedMovieCastAndDirector,
+        isSelected: false,
+        cast: [],
+        director: [],
+      },
+    }));
+  };
+
   /* 
     -----
     Helper Functions:
@@ -342,7 +354,7 @@ const PageMovieListing = () => {
     //  forof
     return movie?.genres.map((genre, index: number) => (
       <div key={index} className="mr-1">
-        &#x2022;<span className="text-sm">{genre}</span>
+        &#x2022;<span className="text-xs">{genre}</span>
       </div>
     ));
   };
@@ -360,7 +372,7 @@ const PageMovieListing = () => {
       return <div className=" h-100 text-sm">Loading...</div>;
     }
     return (
-      <div className="h-100 overflow-y-auto">
+      <div className="">
         <div>
           <div className="text-left mb-0_5">
             <span className="text-xs  ">Caste :</span>
@@ -372,7 +384,7 @@ const PageMovieListing = () => {
                   index + 1 ===
                   pageObj?.selectedMovieCastAndDirector?.cast?.length
                     ? name
-                    : `${name} ,`
+                    : `${name} , `
                 } `}</div>
               )
             )}
@@ -417,27 +429,53 @@ const PageMovieListing = () => {
                 className={`absolute  left-0 right-0 bottom-0  ${
                   movie.id === pageObj.selectedMovieCastAndDirector.movieId &&
                   pageObj.selectedMovieCastAndDirector.isSelected
-                    ? " bg-white text-mid-dark-gray p-1"
+                    ? " bg-white text-mid-dark-gray p-1  "
                     : "text-gray-light"
                 }`}
               >
-                <div className=" text-left text-sm font-bold mb-1   ">
-                  {movie?.title}
+                <div className="flex justify-between">
+                  <div className=" text-left text-sm font-bold mb-1   ">
+                    {movie?.title}
+                  </div>
+                  <div className={"w-12 h-12"}>
+                    <IconButton
+                      type="CLOSE"
+                      imgClassName={
+                        movie.id ===
+                          pageObj.selectedMovieCastAndDirector.movieId &&
+                        pageObj.selectedMovieCastAndDirector.isSelected
+                          ? "w-12 h-12"
+                          : " hidden"
+                      }
+                      onClick={onCloseSelectedMovie}
+                    />
+                  </div>
                 </div>
-                <div className=" text-left text-sm flex flex-wrap  mb-1">
-                  {renderMovieGenres(movie)}
-                </div>
+
                 <div
-                  className={`text-left text-xs mb-1 ${
+                  className={
                     movie.id === pageObj.selectedMovieCastAndDirector.movieId &&
                     pageObj.selectedMovieCastAndDirector.isSelected
-                      ? ""
-                      : "overview-truncate"
-                  }`}
+                      ? "h-movie-overview overflow-y-auto scrollbar"
+                      : ""
+                  }
                 >
-                  {movie?.overview}
+                  <div className={" text-left text-xs flex flex-wrap  mb-1"}>
+                    {renderMovieGenres(movie)}
+                  </div>
+                  <div
+                    className={`text-left text-xs mb-1 ${
+                      movie.id ===
+                        pageObj.selectedMovieCastAndDirector.movieId &&
+                      pageObj.selectedMovieCastAndDirector.isSelected
+                        ? " "
+                        : "overview-truncate"
+                    }`}
+                  >
+                    {movie?.overview}
+                  </div>
+                  {renderCasteAndDirector(movie)}
                 </div>
-                {renderCasteAndDirector(movie)}
               </div>
             </div>
           ))}
