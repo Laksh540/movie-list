@@ -117,6 +117,11 @@ svg {
   height: 15.625rem;
 }
 
+/* Max height */
+.max-h-100vh {
+  max-height: 100vh;
+}
+
 /* Object fit */
 .object-contain {
   object-fit: contain;
@@ -151,6 +156,13 @@ svg {
 /* padding */
 .p-0-5 {
   padding: 0.375rem;
+}
+.pt-0 {
+  padding-top: 0;
+}
+
+.pl-1 {
+  padding-left: 0.75rem;
 }
 
 .p-1 {
@@ -269,6 +281,10 @@ svg {
   overflow-x: auto;
 }
 
+.overflow-hidden {
+  overflow: hidden;
+}
+
 .filter-container {
   -ms-overflow-style: none; /* Internet Explorer 10+ */
   scrollbar-width: none; /* Firefox */
@@ -298,6 +314,8 @@ svg {
   grid-template-columns: repeat(2, 1fr);
   gap: 1.5rem;
   padding: 1.5rem;
+  overflow-y: auto;
+  height: calc(100vh - 160px);
 }
 
 .h-movie-overview {
@@ -357,6 +375,15 @@ svg {
   }
 }
 
+.mobile-hidden {
+  display: none;
+}
+
+@media screen and (min-width: 1200px) {
+  .mobile-hidden {
+    display: block;
+  }
+}
 /* 
 .movie-card:hover {
   width: 400px;

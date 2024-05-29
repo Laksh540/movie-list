@@ -311,7 +311,7 @@ const PageMovieListing = () => {
     }
     return (
       <div className="flex">
-        <div className="w-24 h-24 mr-1">
+        <div className="w-24 h-24 mr-1 mobile-hidden">
           <IconButton
             type={ICON_BUTTON_TYPE.LEFT_ARROW}
             onClick={onScrollLeftForFilter}
@@ -328,7 +328,7 @@ const PageMovieListing = () => {
             </div>
           ))}
         </div>
-        <div className=" w-24 h-24 ml-1">
+        <div className=" w-24 h-24 ml-1  mobile-hidden">
           <IconButton
             type={ICON_BUTTON_TYPE.RIGHT_ARROW}
             onClick={onScrollRightForFilter}
@@ -433,7 +433,14 @@ const PageMovieListing = () => {
                     : "text-gray-light"
                 }`}
               >
-                <div className="flex justify-between">
+                <div
+                  className={`flex justify-between ${
+                    movie.id === pageObj.selectedMovieCastAndDirector.movieId &&
+                    pageObj.selectedMovieCastAndDirector.isSelected
+                      ? ""
+                      : "pl-1"
+                  } `}
+                >
                   <div className=" text-left text-sm font-bold mb-1   ">
                     {movie?.title}
                   </div>
@@ -457,7 +464,7 @@ const PageMovieListing = () => {
                     movie.id === pageObj.selectedMovieCastAndDirector.movieId &&
                     pageObj.selectedMovieCastAndDirector.isSelected
                       ? "h-movie-overview overflow-y-auto scrollbar"
-                      : ""
+                      : " px-1 pb-1"
                   }
                 >
                   <div className={" text-left text-xs flex flex-wrap  mb-1"}>
@@ -489,7 +496,7 @@ const PageMovieListing = () => {
     -----
   */
   return (
-    <div>
+    <div className="overflow-hidden max-h-100vh">
       {renderHeader()}
       {renderMovies()}
     </div>
