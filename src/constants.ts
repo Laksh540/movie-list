@@ -18,3 +18,9 @@ export const MOVIE_CREW_JOB = {
 };
 
 export const IMG_BASE_URL = "http://image.tmdb.org/t/p";
+
+export type TLoadDirection = "UP" | "DOWN";
+export const LOAD_DIRECTION: Record<TLoadDirection, TLoadDirection> = {
+  UP: "UP",
+  DOWN: "DOWN",
+};

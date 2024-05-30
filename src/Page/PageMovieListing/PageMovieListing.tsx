@@ -1,4 +1,4 @@
-import React, { ReactNode, useEffect, useRef, useState } from "react";
+import React, { ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { useHref } from "react-router-dom";
 import movieFixLogo from "../../assets/custom-moviefix-logo.svg";
 import Button from "../../Components/Button/Button";
@@ -6,7 +6,9 @@ import {
   BUTTON_VARIANT,
   ICON_BUTTON_TYPE,
   IMG_BASE_URL,
+  LOAD_DIRECTION,
   MOVIE_CREW_JOB,
+  TLoadDirection,
 } from "../../constants";
 import IconButton from "../../Components/IconButton/IconButton";
 import MovieService from "../../Services/MovieService";
@@ -23,6 +25,10 @@ interface IMovieDetails {
   genres: string[];
   overview: string;
 }
+interface IMovieListWithYear {
+  year: number;
+  list: IMovieDetails[];
+}
 
 interface ISelectedMovieCastAndDirector {
   isSelected?: boolean;
@@ -33,7 +39,7 @@ interface ISelectedMovieCastAndDirector {
 interface IPageObj {
   allGenres: IGenres[];
   allGenresLoading: boolean;
-  movieList: IMovieDetails[];
+  movieList: IMovieListWithYear[];
   movieListLoading: boolean;
   selectedMovieCastAndDirector: ISelectedMovieCastAndDirector;
   selectedMovieCastAndDirectorLoading: boolean;
@@ -51,6 +57,13 @@ const initialPageObj: IPageObj = {
   },
   selectedMovieCastAndDirectorLoading: false,
 };
+let isFirstRenderCheckToGetMovieList = true;
+
+interface IScrollLoadRequest {
+  toggle: boolean;
+  direction: TLoadDirection;
+}
+
 const PageMovieListing = () => {
   /*
     -----
@@ -59,9 +72,15 @@ const PageMovieListing = () => {
   */
   const [pageObj, setPageObj] = useState<IPageObj>({ ...initialPageObj });
   const [timeoutLocal, setTimeOutLocal] = useState<any>(undefined);
-  const filterContainerRef = useRef<HTMLDivElement>(null);
+  const [scrollLoadRequest, setScrollLoadRequest] =
+    useState<IScrollLoadRequest>({
+      toggle: false,
+      direction: LOAD_DIRECTION.DOWN,
+    });
 
-  const movieCardRef = useRef<any[]>([]);
+  const filterContainerRef = useRef<HTMLDivElement>(null);
+  const movieListContainerRef = useRef<any>(null);
+  const yearContainerRef = useRef<any[]>([]);
 
   /*
     -----
@@ -74,7 +93,7 @@ const PageMovieListing = () => {
 
   useEffect(() => {
     if (pageObj?.allGenres.length > 0) {
-      getMovies();
+      getMovies(2012);
       // getMovieCredits();
     }
   }, [pageObj?.allGenres]);
@@ -86,6 +105,71 @@ const PageMovieListing = () => {
       }, 1000);
     }
   }, [pageObj?.selectedMovieCastAndDirector.movieId]);
+
+  useEffect(() => {
+    if (pageObj?.movieList?.length === 1) {
+      movieListContainerRef.current.scrollTop = 30;
+    } else if (
+      pageObj?.movieList?.length > 1 &&
+      scrollLoadRequest?.direction === LOAD_DIRECTION.UP
+    ) {
+      // movieListContainerRef.current.scrollTop = 30;
+      // setTimeout(() => {
+      movieListContainerRef.current.scrollTop =
+        yearContainerRef?.current?.[0]?.clientHeight;
+      // }, 50);
+    }
+  }, [pageObj?.movieList]);
+
+  // useEffect(() => {
+  //   const handleScroll = () => {
+  //     const { scrollTop, clientHeight, scrollHeight } =
+  //       document.documentElement;
+  //     // console.log("scrollTop", scrollTop);
+  //     // console.log("clientHeight", clientHeight);
+  //     // console.log("scrollHeight", scrollHeight);
+  //     if (scrollTop + clientHeight >= scrollHeight - 20) {
+  //       setToggleToRequestMoreData((prev) => !prev);
+  //     }
+  //   };
+
+  //   getJobList();
+  //   movieListContainerRef?.addEventListener("scroll", handleScroll);
+  //   return () => {
+  //     window.removeEventListener("scroll", handleScroll);
+  //   };
+  // }, []);
+
+  useEffect(() => {
+    let getData: any;
+    // debugger;
+    // ignore for first render
+    if (!isFirstRenderCheckToGetMovieList) {
+      // setIsListLoading(true);
+      let todaysDate = new Date();
+      getData = setTimeout(() => {
+        if (
+          pageObj?.movieList?.[pageObj?.movieList.length - 1]?.year <
+          todaysDate.getFullYear()
+        ) {
+          let year;
+          if (scrollLoadRequest.direction === LOAD_DIRECTION.DOWN) {
+            year = pageObj.movieList[pageObj.movieList.length - 1].year + 1;
+          } else {
+            year = pageObj.movieList[0].year - 1;
+          }
+          getMovies(year);
+        }
+      }, 2000);
+    }
+    if (isFirstRenderCheckToGetMovieList) {
+      isFirstRenderCheckToGetMovieList = false;
+    }
+
+    return () => {
+      clearTimeout(getData);
+    };
+  }, [scrollLoadRequest.toggle]);
 
   /*
     -----
@@ -114,21 +198,62 @@ const PageMovieListing = () => {
     }
   };
 
-  const getMovies = async () => {
+  const getMovies = async (year: number) => {
+    const doesDataAlreadyExistForSameYear = pageObj?.movieList?.some(
+      (record) => record?.year === year
+    );
+
+    if (doesDataAlreadyExistForSameYear) {
+      return;
+    }
     setPageObj((prevObj) => ({
       ...prevObj,
       movieListLoading: true,
     }));
     try {
       const res: any = await MovieService.getMovieList(
-        `&primary_release_year=2023&page=1&append_to_response=credits`
+        `&primary_release_year=${year}&page=1&append_to_response=credits`
       );
       console.log("res for movie list", res);
-      setPageObj((prevObj) => ({
-        ...prevObj,
-        movieList: getMovieListData(res?.results),
-        movieListLoading: false,
-      }));
+      setPageObj((prevObj) => {
+        let newList = getMovieListData(res?.results);
+        let updatedMovieList: IMovieListWithYear[] = [];
+
+        if (prevObj?.movieList?.length === 0) {
+          updatedMovieList.push({
+            year: year,
+            list: newList,
+          });
+        } else {
+          if (year < prevObj.movieList[0].year) {
+            console.log("yearRef", yearContainerRef?.current?.[0]);
+            console.log(
+              "yearRef height",
+              yearContainerRef?.current?.[0]?.clientHeight
+            );
+            console.log(
+              "current scroll top",
+              movieListContainerRef.current.scrollTop
+            );
+            movieListContainerRef.current.scrollTop = 2000;
+            // yearContainerRef?.current?.[0]?.height;
+            updatedMovieList = [
+              { year: year, list: newList },
+              ...JSON.parse(JSON.stringify(prevObj.movieList)),
+            ];
+          } else {
+            updatedMovieList = [
+              ...JSON.parse(JSON.stringify(prevObj.movieList)),
+              { year: year, list: newList },
+            ];
+          }
+        }
+        return {
+          ...prevObj,
+          movieList: updatedMovieList,
+          movieListLoading: false,
+        };
+      });
     } catch (error) {
       console.log("error ", error);
       setPageObj((prevObj) => ({
@@ -212,6 +337,28 @@ const PageMovieListing = () => {
         director: [],
       },
     }));
+  };
+
+  const onScrollMovieList = (e: any) => {
+    // e?.currentTarget?.scrollTop
+    const { scrollTop, clientHeight, scrollHeight } = e?.currentTarget;
+    console.log("scroll top ", scrollTop);
+
+    if (scrollTop + clientHeight >= scrollHeight - 20) {
+      console.log("load direction down");
+      setScrollLoadRequest((prevData) => ({
+        ...prevData,
+        toggle: !prevData.toggle,
+        direction: LOAD_DIRECTION.DOWN,
+      }));
+    } else if (scrollTop === 0) {
+      console.log("load direction up");
+      setScrollLoadRequest((prevData) => ({
+        ...prevData,
+        toggle: !prevData.toggle,
+        direction: LOAD_DIRECTION.UP,
+      }));
+    }
   };
 
   /* 
@@ -408,84 +555,132 @@ const PageMovieListing = () => {
       </div>
     );
   };
+
+  console.log("pageObj?.movieList", pageObj?.movieList);
+
+  // {year: }
   const renderMovies = () => {
+    // let movieListByYear = [];
+
     return (
-      <div>
-        <div className="movie-list-grid">
-          {pageObj?.movieList?.map((movie: IMovieDetails, index: number) => (
+      <div
+        className="movie-list-container"
+        ref={movieListContainerRef}
+        onScroll={onScrollMovieList}
+      >
+        {
+          <div className="h-24 pt-0_5 flex justify-center">
+            <div>
+              {pageObj?.movieListLoading &&
+              scrollLoadRequest.direction === LOAD_DIRECTION.UP
+                ? "Loading..."
+                : ""}
+            </div>
+          </div>
+        }
+        {pageObj?.movieList?.map(
+          (yearData: IMovieListWithYear, index: number) => (
             <div
-              className="movie-card"
-              // ref={(ref) => {
-              //   movieCardRef.current[index] = ref;
-              // }}
-              key={movie.id}
-              onClick={() => onShowAdditionalMovieDetails(movie)}
+              className=""
+              key={yearData?.year}
+              ref={(ref) => {
+                yearContainerRef.current[index] = ref;
+              }}
             >
-              <img
-                src={`${IMG_BASE_URL}/w500${movie?.poster_path}`}
-                className="object-contain w-full h-full"
-              />
-              <div
-                className={`absolute  left-0 right-0 bottom-0  ${
-                  movie.id === pageObj.selectedMovieCastAndDirector.movieId &&
-                  pageObj.selectedMovieCastAndDirector.isSelected
-                    ? " bg-white text-mid-dark-gray p-1  "
-                    : "text-gray-light"
-                }`}
-              >
-                <div
-                  className={`flex justify-between ${
-                    movie.id === pageObj.selectedMovieCastAndDirector.movieId &&
-                    pageObj.selectedMovieCastAndDirector.isSelected
-                      ? ""
-                      : "pl-1"
-                  } `}
-                >
-                  <div className=" text-left text-sm font-bold mb-1   ">
-                    {movie?.title}
-                  </div>
-                  <div className={"w-12 h-12"}>
-                    <IconButton
-                      type="CLOSE"
-                      imgClassName={
+              <div className="text-left text-md font-bold mb-1 text-white pt-2 pl-2 ">
+                {yearData?.year}
+              </div>
+              <div className="movie-list-grid">
+                {yearData?.list?.map((movie: IMovieDetails, index: number) => (
+                  <div
+                    className="movie-card"
+                    // ref={(ref) => {
+                    //   movieCardRef.current[index] = ref;
+                    // }}
+                    key={movie.id}
+                    onClick={() => onShowAdditionalMovieDetails(movie)}
+                  >
+                    <img
+                      src={`${IMG_BASE_URL}/w500${movie?.poster_path}`}
+                      className="object-contain w-full h-full"
+                    />
+                    <div
+                      className={`absolute  left-0 right-0 bottom-0  ${
                         movie.id ===
                           pageObj.selectedMovieCastAndDirector.movieId &&
                         pageObj.selectedMovieCastAndDirector.isSelected
-                          ? "w-12 h-12"
-                          : " hidden"
-                      }
-                      onClick={onCloseSelectedMovie}
-                    />
-                  </div>
-                </div>
+                          ? " bg-white text-mid-dark-gray p-1  "
+                          : "text-gray-light"
+                      }`}
+                    >
+                      <div
+                        className={`flex justify-between ${
+                          movie.id ===
+                            pageObj.selectedMovieCastAndDirector.movieId &&
+                          pageObj.selectedMovieCastAndDirector.isSelected
+                            ? ""
+                            : "pl-1"
+                        } `}
+                      >
+                        <div className=" text-left text-sm font-bold mb-1   ">
+                          {movie?.title}
+                        </div>
+                        <div className={"w-12 h-12"}>
+                          <IconButton
+                            type="CLOSE"
+                            imgClassName={
+                              movie.id ===
+                                pageObj.selectedMovieCastAndDirector.movieId &&
+                              pageObj.selectedMovieCastAndDirector.isSelected
+                                ? "w-12 h-12"
+                                : " hidden"
+                            }
+                            onClick={onCloseSelectedMovie}
+                          />
+                        </div>
+                      </div>
 
-                <div
-                  className={
-                    movie.id === pageObj.selectedMovieCastAndDirector.movieId &&
-                    pageObj.selectedMovieCastAndDirector.isSelected
-                      ? "h-movie-overview overflow-y-auto scrollbar"
-                      : " px-1 pb-1"
-                  }
-                >
-                  <div className={" text-left text-xs flex flex-wrap  mb-1"}>
-                    {renderMovieGenres(movie)}
+                      <div
+                        className={
+                          movie.id ===
+                            pageObj.selectedMovieCastAndDirector.movieId &&
+                          pageObj.selectedMovieCastAndDirector.isSelected
+                            ? "h-movie-overview overflow-y-auto scrollbar"
+                            : " px-1 pb-1"
+                        }
+                      >
+                        <div
+                          className={" text-left text-xs flex flex-wrap  mb-1"}
+                        >
+                          {renderMovieGenres(movie)}
+                        </div>
+                        <div
+                          className={`text-left text-xs mb-1 ${
+                            movie.id ===
+                              pageObj.selectedMovieCastAndDirector.movieId &&
+                            pageObj.selectedMovieCastAndDirector.isSelected
+                              ? " "
+                              : "overview-truncate"
+                          }`}
+                        >
+                          {movie?.overview}
+                        </div>
+                        {renderCasteAndDirector(movie)}
+                      </div>
+                    </div>
                   </div>
-                  <div
-                    className={`text-left text-xs mb-1 ${
-                      movie.id ===
-                        pageObj.selectedMovieCastAndDirector.movieId &&
-                      pageObj.selectedMovieCastAndDirector.isSelected
-                        ? " "
-                        : "overview-truncate"
-                    }`}
-                  >
-                    {movie?.overview}
-                  </div>
-                  {renderCasteAndDirector(movie)}
-                </div>
+                ))}
               </div>
             </div>
-          ))}
+          )
+        )}
+        <div className="h-24 pb-0_5 flex justify-center">
+          <div>
+            {pageObj.movieListLoading &&
+            scrollLoadRequest.direction === LOAD_DIRECTION.DOWN
+              ? "Loading..."
+              : ""}
+          </div>
         </div>
       </div>
     );
