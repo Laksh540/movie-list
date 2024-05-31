@@ -1,18 +1,20 @@
-import React, { ReactNode, useEffect, useMemo, useRef, useState } from "react";
-import { useHref } from "react-router-dom";
-import movieFixLogo from "../../assets/custom-moviefix-logo.svg";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Button from "../../Components/Button/Button";
+import IconButton from "../../Components/IconButton/IconButton";
+import SimpleDropdown from "../../Components/SimpleDropdown/SimpleDropdown";
+import SimpleInput from "../../Components/SimpleInput/SimpleInput";
 import {
   BUTTON_VARIANT,
   ICON_BUTTON_TYPE,
   IMG_BASE_URL,
   LOAD_DIRECTION,
   MOVIE_CREW_JOB,
+  MOVIE_FILTER_BY,
+  MOVIE_FILTER_OPTIONS,
   TLoadDirection,
+  TMovieFilterBy,
 } from "../../constants";
-import IconButton from "../../Components/IconButton/IconButton";
 import MovieService from "../../Services/MovieService";
-
 interface IGenres {
   id: number;
   name: string;
@@ -36,6 +38,12 @@ interface ISelectedMovieCastAndDirector {
   cast: string[];
   director: string[];
 }
+
+interface IMovieFilter {
+  filterBy: TMovieFilterBy;
+  genres: String[];
+  name: string;
+}
 interface IPageObj {
   allGenres: IGenres[];
   allGenresLoading: boolean;
@@ -43,6 +51,7 @@ interface IPageObj {
   movieListLoading: boolean;
   selectedMovieCastAndDirector: ISelectedMovieCastAndDirector;
   selectedMovieCastAndDirectorLoading: boolean;
+  filter: IMovieFilter;
 }
 
 const initialPageObj: IPageObj = {
@@ -56,6 +65,11 @@ const initialPageObj: IPageObj = {
     director: [],
   },
   selectedMovieCastAndDirectorLoading: false,
+  filter: {
+    filterBy: MOVIE_FILTER_BY.GENRES,
+    genres: [],
+    name: "",
+  },
 };
 let isFirstRenderCheckToGetMovieList = true;
 
@@ -109,36 +123,8 @@ const PageMovieListing = () => {
   useEffect(() => {
     if (pageObj?.movieList?.length === 1) {
       movieListContainerRef.current.scrollTop = 30;
-    } else if (
-      pageObj?.movieList?.length > 1 &&
-      scrollLoadRequest?.direction === LOAD_DIRECTION.UP
-    ) {
-      // movieListContainerRef.current.scrollTop = 30;
-      // setTimeout(() => {
-      movieListContainerRef.current.scrollTop =
-        yearContainerRef?.current?.[0]?.clientHeight;
-      // }, 50);
     }
   }, [pageObj?.movieList]);
-
-  // useEffect(() => {
-  //   const handleScroll = () => {
-  //     const { scrollTop, clientHeight, scrollHeight } =
-  //       document.documentElement;
-  //     // console.log("scrollTop", scrollTop);
-  //     // console.log("clientHeight", clientHeight);
-  //     // console.log("scrollHeight", scrollHeight);
-  //     if (scrollTop + clientHeight >= scrollHeight - 20) {
-  //       setToggleToRequestMoreData((prev) => !prev);
-  //     }
-  //   };
-
-  //   getJobList();
-  //   movieListContainerRef?.addEventListener("scroll", handleScroll);
-  //   return () => {
-  //     window.removeEventListener("scroll", handleScroll);
-  //   };
-  // }, []);
 
   useEffect(() => {
     let getData: any;
@@ -235,7 +221,7 @@ const PageMovieListing = () => {
               "current scroll top",
               movieListContainerRef.current.scrollTop
             );
-            movieListContainerRef.current.scrollTop = 2000;
+            // movieListContainerRef.current.scrollTop = 30;
             // yearContainerRef?.current?.[0]?.height;
             updatedMovieList = [
               { year: year, list: newList },
@@ -360,7 +346,29 @@ const PageMovieListing = () => {
       }));
     }
   };
+  const handleChangeFilterBy = (option: any) => {
+    console.log("on change option", option);
 
+    setPageObj((prevObj) => ({
+      ...prevObj,
+      filter: {
+        ...prevObj.filter,
+        filterBy: option?.value,
+        genres: [],
+        name: "",
+      },
+    }));
+  };
+
+  const handleChangeMovieNameFilter = (e: any) => {
+    setPageObj((prevObj) => ({
+      ...prevObj,
+      filter: {
+        ...prevObj.filter,
+        name: e?.target?.value,
+      },
+    }));
+  };
   /* 
     -----
     Helper Functions:
@@ -448,7 +456,7 @@ const PageMovieListing = () => {
     );
   };
 
-  const renderAllGenres = () => {
+  const renderFilters = () => {
     if (pageObj?.allGenresLoading) {
       return (
         <div className="flex justify-center pb-2 ">
@@ -458,30 +466,56 @@ const PageMovieListing = () => {
     }
     return (
       <div className="flex">
-        <div className="w-24 h-24 mr-1 mobile-hidden">
-          <IconButton
-            type={ICON_BUTTON_TYPE.LEFT_ARROW}
-            onClick={onScrollLeftForFilter}
-            imgClassName="w-24 h-24"
+        <div className="w-140 flex-shrink-0 mb-1">
+          <SimpleDropdown
+            optionLabel="label"
+            optionValue="value"
+            options={MOVIE_FILTER_OPTIONS}
+            placeholder="Filter By"
+            value={pageObj?.filter?.filterBy}
+            onChange={handleChangeFilterBy}
           />
         </div>
-        <div
-          className="flex overflow-x-auto filter-container pb-1"
-          ref={filterContainerRef}
-        >
-          {pageObj?.allGenres.map((genre: IGenres) => (
-            <div className="w-fit mr-1 flex-shrink-0 " key={genre?.id}>
-              <Button label={genre.name} variant={BUTTON_VARIANT.PRIMARY} />
+        {pageObj?.filter?.filterBy === MOVIE_FILTER_BY.GENRES ? (
+          <div className="flex genre-filter-width">
+            <div className="w-24 h-24 mr-1 mobile-hidden">
+              <IconButton
+                type={ICON_BUTTON_TYPE.LEFT_ARROW}
+                onClick={onScrollLeftForFilter}
+                imgClassName="w-24 h-24"
+              />
             </div>
-          ))}
-        </div>
-        <div className=" w-24 h-24 ml-1  mobile-hidden">
-          <IconButton
-            type={ICON_BUTTON_TYPE.RIGHT_ARROW}
-            onClick={onScrollRightForFilter}
-            imgClassName="w-24 h-24"
-          />
-        </div>
+            <div
+              className="scroll-smooth  flex overflow-x-auto filter-container pb-1"
+              ref={filterContainerRef}
+            >
+              {pageObj?.allGenres.map((genre: IGenres) => (
+                <div className="w-fit mr-1 flex-shrink-0 " key={genre?.id}>
+                  <Button
+                    label={genre.name}
+                    variant={BUTTON_VARIANT.PRIMARY}
+                    // isSelected={pageObj.filter.genres.}
+                  />
+                </div>
+              ))}
+            </div>
+            <div className=" w-24 h-24 ml-1  mobile-hidden">
+              <IconButton
+                type={ICON_BUTTON_TYPE.RIGHT_ARROW}
+                onClick={onScrollRightForFilter}
+                imgClassName="w-24 h-24"
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="ml-3 movie-search-field mb-1">
+            <SimpleInput
+              placeholder="Movie Name"
+              value={pageObj?.filter?.name}
+              onChange={handleChangeMovieNameFilter}
+            />
+          </div>
+        )}
       </div>
     );
   };
@@ -492,7 +526,7 @@ const PageMovieListing = () => {
           <div className=" w-140">{renderCustomMovifixLogo()}</div>
         </div>
         {/* red color #ff4747 */}
-        {renderAllGenres()}
+        {renderFilters()}
       </div>
     );
   };
@@ -559,18 +593,17 @@ const PageMovieListing = () => {
   console.log("pageObj?.movieList", pageObj?.movieList);
 
   // {year: }
-  const renderMovies = () => {
-    // let movieListByYear = [];
 
+  const renderMovies = useMemo(() => {
     return (
       <div
-        className="movie-list-container"
+        className="movie-list-container z-1 "
         ref={movieListContainerRef}
         onScroll={onScrollMovieList}
       >
         {
           <div className="h-24 pt-0_5 flex justify-center">
-            <div>
+            <div className="h-full test">
               {pageObj?.movieListLoading &&
               scrollLoadRequest.direction === LOAD_DIRECTION.UP
                 ? "Loading..."
@@ -675,7 +708,7 @@ const PageMovieListing = () => {
           )
         )}
         <div className="h-24 pb-0_5 flex justify-center">
-          <div>
+          <div className="h-full">
             {pageObj.movieListLoading &&
             scrollLoadRequest.direction === LOAD_DIRECTION.DOWN
               ? "Loading..."
@@ -684,7 +717,13 @@ const PageMovieListing = () => {
         </div>
       </div>
     );
-  };
+  }, [
+    pageObj?.movieListLoading,
+    scrollLoadRequest.direction,
+    pageObj?.movieList,
+    pageObj.selectedMovieCastAndDirector,
+  ]);
+
   /*
     -----
     Main Render  :
@@ -692,8 +731,25 @@ const PageMovieListing = () => {
   */
   return (
     <div className="overflow-hidden max-h-100vh">
+      {/* <div className="w-140">
+        <SimpleDropdown
+          optionLabel="label"
+          optionValue="value"
+          options={MOVIE_FILTER_OPTIONS}
+          placeholder="Filter By"
+          value={pageObj?.filter?.filterBy}
+          onChange={handleChangeFilterBy}
+        />
+      </div> */}
+      {/* <div className="ml-1 w-140">
+        <SimpleInput
+          placeholder="Movie Name"
+          value={pageObj?.filter?.name}
+          onChange={handleChangeMovieNameFilter}
+        />
+      </div> */}
       {renderHeader()}
-      {renderMovies()}
+      {renderMovies}
     </div>
   );
 };
