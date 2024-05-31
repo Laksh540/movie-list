@@ -24,3 +24,22 @@ export const LOAD_DIRECTION: Record<TLoadDirection, TLoadDirection> = {
   UP: "UP",
   DOWN: "DOWN",
 };
+
+export type TMovieFilterBy = "NAME" | "GENRES";
+
+export const MOVIE_FILTER_BY: Record<TMovieFilterBy, TMovieFilterBy> = {
+  GENRES: "GENRES",
+  NAME: "NAME",
+};
+
+export const MOVIE_FILTER_OPTIONS: { label: string; value: TMovieFilterBy }[] =
+  [
+    {
+      label: "Movie Name",
+      value: MOVIE_FILTER_BY?.NAME,
+    },
+    {
+      label: "Movie Genres",
+      value: MOVIE_FILTER_BY?.GENRES,
+    },
+  ];
