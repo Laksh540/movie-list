@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Button from "../../Components/Button/Button";
 import IconButton from "../../Components/IconButton/IconButton";
 import SimpleDropdown from "../../Components/SimpleDropdown/SimpleDropdown";
@@ -15,6 +15,8 @@ import {
   TMovieFilterBy,
 } from "../../constants";
 import MovieService from "../../Services/MovieService";
+import noMoviePoster from "../../assets/no-movie-poster.jpg";
+
 interface IGenres {
   id: number;
   name: string;
@@ -41,7 +43,7 @@ interface ISelectedMovieCastAndDirector {
 
 interface IMovieFilter {
   filterBy: TMovieFilterBy;
-  genres: String[];
+  genres: number[];
   name: string;
 }
 interface IPageObj {
@@ -52,6 +54,11 @@ interface IPageObj {
   selectedMovieCastAndDirector: ISelectedMovieCastAndDirector;
   selectedMovieCastAndDirectorLoading: boolean;
   filter: IMovieFilter;
+  movieListByName: {
+    list: IMovieDetails[];
+    page: number | null;
+    totalPage: number | null;
+  };
 }
 
 const initialPageObj: IPageObj = {
@@ -70,7 +77,13 @@ const initialPageObj: IPageObj = {
     genres: [],
     name: "",
   },
+  movieListByName: {
+    list: [],
+    page: null,
+    totalPage: null,
+  },
 };
+
 let isFirstRenderCheckToGetMovieList = true;
 
 interface IScrollLoadRequest {
@@ -107,10 +120,19 @@ const PageMovieListing = () => {
 
   useEffect(() => {
     if (pageObj?.allGenres.length > 0) {
-      getMovies(2012);
-      // getMovieCredits();
+      if (pageObj.movieList.length === 0) {
+        getMovies(2012);
+      }
     }
-  }, [pageObj?.allGenres]);
+  }, [pageObj?.allGenres, pageObj?.filter.genres]);
+
+  // useEffect(() => {
+  //   if (pageObj?.filter?.filterBy === MOVIE_FILTER_BY.NAME) {
+  //     if (pageObj.movieListByName.length === 0) {
+  //       getMoviesByName();
+  //     }
+  //   }
+  // }, [pageObj?.filter?.filterBy]);
 
   useEffect(() => {
     if (pageObj?.selectedMovieCastAndDirector.movieId) {
@@ -128,23 +150,29 @@ const PageMovieListing = () => {
 
   useEffect(() => {
     let getData: any;
-    // debugger;
-    // ignore for first render
     if (!isFirstRenderCheckToGetMovieList) {
-      // setIsListLoading(true);
       let todaysDate = new Date();
       getData = setTimeout(() => {
-        if (
-          pageObj?.movieList?.[pageObj?.movieList.length - 1]?.year <
-          todaysDate.getFullYear()
-        ) {
-          let year;
-          if (scrollLoadRequest.direction === LOAD_DIRECTION.DOWN) {
-            year = pageObj.movieList[pageObj.movieList.length - 1].year + 1;
-          } else {
-            year = pageObj.movieList[0].year - 1;
+        if (pageObj?.filter?.filterBy === MOVIE_FILTER_BY.GENRES) {
+          if (
+            pageObj?.movieList?.[pageObj?.movieList.length - 1]?.year <
+            todaysDate.getFullYear()
+          ) {
+            let year;
+            if (scrollLoadRequest.direction === LOAD_DIRECTION.DOWN) {
+              year = pageObj.movieList[pageObj.movieList.length - 1].year + 1;
+            } else {
+              year = pageObj.movieList[0].year - 1;
+            }
+            getMovies(year);
           }
-          getMovies(year);
+        } else {
+          if (
+            scrollLoadRequest?.direction === LOAD_DIRECTION.DOWN &&
+            pageObj?.filter?.name?.trim?.() !== ""
+          ) {
+            getMoviesByName();
+          }
         }
       }, 2000);
     }
@@ -156,6 +184,35 @@ const PageMovieListing = () => {
       clearTimeout(getData);
     };
   }, [scrollLoadRequest.toggle]);
+
+  useEffect(() => {
+    let getData: any;
+    getData = setTimeout(() => {
+      setPageObj((prevObj) => ({
+        ...prevObj,
+        movieListByName: {
+          ...prevObj.movieListByName,
+          list: [],
+          page: null,
+          totalPage: null,
+        },
+      }));
+    }, 1000);
+
+    return () => {
+      clearTimeout(getData);
+    };
+  }, [pageObj?.filter?.name]);
+
+  useEffect(() => {
+    if (
+      pageObj?.filter?.filterBy === MOVIE_FILTER_BY.NAME &&
+      pageObj?.movieListByName?.list?.length === 0 &&
+      pageObj?.filter?.name?.trim?.() !== ""
+    ) {
+      getMoviesByName();
+    }
+  }, [pageObj?.movieListByName?.list]);
 
   /*
     -----
@@ -192,13 +249,24 @@ const PageMovieListing = () => {
     if (doesDataAlreadyExistForSameYear) {
       return;
     }
+    let withGenreParam = "";
+
+    pageObj?.filter?.genres?.forEach((genreId, index) => {
+      if (index === 0) {
+        withGenreParam = `&with_genres=${genreId}`;
+      } else if (pageObj?.filter?.genres.length - 1 === index) {
+        withGenreParam += `|${genreId}`;
+      } else {
+        withGenreParam += `|${genreId}`;
+      }
+    });
     setPageObj((prevObj) => ({
       ...prevObj,
       movieListLoading: true,
     }));
     try {
       const res: any = await MovieService.getMovieList(
-        `&primary_release_year=${year}&page=1&append_to_response=credits`
+        `&primary_release_year=${year}&page=1&append_to_response=credits${withGenreParam}`
       );
       console.log("res for movie list", res);
       setPageObj((prevObj) => {
@@ -275,6 +343,48 @@ const PageMovieListing = () => {
       setPageObj((prevObj) => ({
         ...prevObj,
         selectedMovieCastAndDirectorLoading: false,
+      }));
+    }
+  };
+
+  const getMoviesByName = async () => {
+    if (
+      pageObj?.movieListByName?.page !== null &&
+      pageObj?.movieListByName?.totalPage !== null &&
+      pageObj?.movieListByName?.page >= pageObj?.movieListByName?.totalPage
+    ) {
+      return;
+    }
+    try {
+      setPageObj((prevObj) => ({
+        ...prevObj,
+        movieListLoading: true,
+      }));
+      let search = `&query=${pageObj?.filter?.name}`;
+      if (pageObj?.movieListByName?.page) {
+        search += `&page=${pageObj?.movieListByName?.page + 1}`;
+      }
+
+      const res: any = await MovieService.searchMovieByName(`${search}`);
+      console.log("res for movie list", res);
+      setPageObj((prevObj) => {
+        let newList = getMovieListData(res?.results);
+        return {
+          ...prevObj,
+          movieListByName: {
+            ...prevObj.movieListByName,
+            page: res?.page,
+            list: [...prevObj.movieListByName.list, ...newList],
+            totalPage: res?.total_pages,
+          },
+          movieListLoading: false,
+        };
+      });
+    } catch (error) {
+      console.log("error ", error);
+      setPageObj((prevObj) => ({
+        ...prevObj,
+        movieListLoading: false,
       }));
     }
   };
@@ -369,11 +479,44 @@ const PageMovieListing = () => {
       },
     }));
   };
+
+  const onToggleGenre = (genre: IGenres) => {
+    setPageObj((prevObj) => {
+      const isGenreSelected = prevObj.filter.genres?.find(
+        (id: number) => id === genre.id
+      );
+      let selectedGenres = [...prevObj.filter.genres];
+      // let movieList = [...prevObj.movieList];
+      if (isGenreSelected) {
+        selectedGenres = prevObj.filter.genres?.filter(
+          (id: number) => id !== genre.id
+        );
+      } else {
+        selectedGenres = [...selectedGenres, genre.id];
+      }
+
+      return {
+        ...prevObj,
+        filter: {
+          ...prevObj.filter,
+          genres: selectedGenres,
+        },
+        movieList: [],
+      };
+    });
+  };
   /* 
     -----
     Helper Functions:
     -----
   */
+
+  // const resetMovieList = () => {
+  //   setPageObj((prevObj) => ({
+  //     ...prevObj,
+  //     movieList: [],
+  //   }));
+  // };
 
   const debounce = (func: () => void, delay: number) => {
     clearTimeout(timeoutLocal);
@@ -494,7 +637,12 @@ const PageMovieListing = () => {
                   <Button
                     label={genre.name}
                     variant={BUTTON_VARIANT.PRIMARY}
-                    // isSelected={pageObj.filter.genres.}
+                    onClick={() => onToggleGenre(genre)}
+                    isSelected={
+                      pageObj.filter.genres.find((id) => id === genre.id)
+                        ? true
+                        : false
+                    }
                   />
                 </div>
               ))}
@@ -508,12 +656,14 @@ const PageMovieListing = () => {
             </div>
           </div>
         ) : (
-          <div className="ml-3 movie-search-field mb-1">
-            <SimpleInput
-              placeholder="Movie Name"
-              value={pageObj?.filter?.name}
-              onChange={handleChangeMovieNameFilter}
-            />
+          <div className="flex justify-center flex-grow-1">
+            <div className="ml-3 movie-search-field mb-1">
+              <SimpleInput
+                placeholder="Movie Name"
+                value={pageObj?.filter?.name}
+                onChange={handleChangeMovieNameFilter}
+              />
+            </div>
           </div>
         )}
       </div>
@@ -593,8 +743,124 @@ const PageMovieListing = () => {
   console.log("pageObj?.movieList", pageObj?.movieList);
 
   // {year: }
+  // console.log("loading outside memo");
 
-  const renderMovies = useMemo(() => {
+  const renderMovieListUngrouped = (movieList: IMovieDetails[]) => {
+    console.log("render for ungrouped ", movieList);
+
+    return movieList?.map((movie: IMovieDetails, index: number) => (
+      <div
+        className="movie-card loading-transition" //loading-transition
+        // ref={(ref) => {
+        //   movieCardRef.current[index] = ref;
+        // }}
+        key={movie.id}
+        onClick={() => onShowAdditionalMovieDetails(movie)}
+      >
+        {movie?.poster_path ? (
+          <img
+            src={`${IMG_BASE_URL}/w500${movie?.poster_path}`}
+            className="object-contain w-full h-full"
+          />
+        ) : (
+          <img src={noMoviePoster} className="object-contain w-full h-full" />
+        )}
+
+        <div
+          className={`absolute  left-0 right-0 bottom-0  ${
+            movie.id === pageObj.selectedMovieCastAndDirector.movieId &&
+            pageObj.selectedMovieCastAndDirector.isSelected
+              ? " bg-white text-mid-dark-gray p-1  "
+              : "text-gray-light"
+          }`}
+        >
+          <div
+            className={`flex justify-between ${
+              movie.id === pageObj.selectedMovieCastAndDirector.movieId &&
+              pageObj.selectedMovieCastAndDirector.isSelected
+                ? ""
+                : "pl-1"
+            } `}
+          >
+            <div className=" text-left text-sm font-bold mb-1   ">
+              {movie?.title}
+            </div>
+            <div className={"w-12 h-12"}>
+              <IconButton
+                type="CLOSE"
+                imgClassName={
+                  movie.id === pageObj.selectedMovieCastAndDirector.movieId &&
+                  pageObj.selectedMovieCastAndDirector.isSelected
+                    ? "w-12 h-12"
+                    : " hidden"
+                }
+                onClick={onCloseSelectedMovie}
+              />
+            </div>
+          </div>
+
+          <div
+            className={
+              movie.id === pageObj.selectedMovieCastAndDirector.movieId &&
+              pageObj.selectedMovieCastAndDirector.isSelected
+                ? "h-movie-overview overflow-y-auto scrollbar"
+                : " px-1 pb-1"
+            }
+          >
+            <div className={" text-left text-xs flex flex-wrap  mb-1"}>
+              {renderMovieGenres(movie)}
+            </div>
+            <div
+              className={`text-left text-xs mb-1 ${
+                movie.id === pageObj.selectedMovieCastAndDirector.movieId &&
+                pageObj.selectedMovieCastAndDirector.isSelected
+                  ? " "
+                  : "overview-truncate"
+              }`}
+            >
+              {movie?.overview}
+            </div>
+            {renderCasteAndDirector(movie)}
+          </div>
+        </div>
+      </div>
+    ));
+  };
+  //   ,
+  //   [
+  //     pageObj.selectedMovieCastAndDirector,
+  //     pageObj?.selectedMovieCastAndDirectorLoading,
+  //   ]
+  // );
+
+  const renderMovieListGrouped = useMemo(() => {
+    return pageObj?.movieList?.map(
+      (yearData: IMovieListWithYear, index: number) => (
+        <div
+          // className="loading-transition"
+          key={yearData?.year}
+          ref={(ref) => {
+            yearContainerRef.current[index] = ref;
+          }}
+        >
+          <div className="text-left text-md font-bold mb-1 text-white pt-2 pl-2 ">
+            {yearData?.year}
+          </div>
+
+          <div className="movie-list-grid">
+            {renderMovieListUngrouped(yearData?.list)}
+          </div>
+        </div>
+      )
+    );
+  }, [
+    pageObj?.movieList,
+    pageObj.selectedMovieCastAndDirector,
+    pageObj?.selectedMovieCastAndDirectorLoading,
+  ]);
+
+  const renderMoviesListContainer = useMemo(() => {
+    console.log("loading inside memo");
     return (
       <div
         className="movie-list-container z-1 "
@@ -611,102 +877,23 @@ const PageMovieListing = () => {
             </div>
           </div>
         }
-        {pageObj?.movieList?.map(
-          (yearData: IMovieListWithYear, index: number) => (
-            <div
-              className=""
-              key={yearData?.year}
-              ref={(ref) => {
-                yearContainerRef.current[index] = ref;
-              }}
-            >
-              <div className="text-left text-md font-bold mb-1 text-white pt-2 pl-2 ">
-                {yearData?.year}
+        {pageObj?.filter.filterBy === MOVIE_FILTER_BY.GENRES ? (
+          renderMovieListGrouped
+        ) : (
+          <div className="">
+            {pageObj?.movieListByName?.list?.length === 0 &&
+            !pageObj?.movieListLoading ? (
+              <div className="flex justify-center mt-1">
+                <div>No Results Found</div>
               </div>
+            ) : (
               <div className="movie-list-grid">
-                {yearData?.list?.map((movie: IMovieDetails, index: number) => (
-                  <div
-                    className="movie-card"
-                    // ref={(ref) => {
-                    //   movieCardRef.current[index] = ref;
-                    // }}
-                    key={movie.id}
-                    onClick={() => onShowAdditionalMovieDetails(movie)}
-                  >
-                    <img
-                      src={`${IMG_BASE_URL}/w500${movie?.poster_path}`}
-                      className="object-contain w-full h-full"
-                    />
-                    <div
-                      className={`absolute  left-0 right-0 bottom-0  ${
-                        movie.id ===
-                          pageObj.selectedMovieCastAndDirector.movieId &&
-                        pageObj.selectedMovieCastAndDirector.isSelected
-                          ? " bg-white text-mid-dark-gray p-1  "
-                          : "text-gray-light"
-                      }`}
-                    >
-                      <div
-                        className={`flex justify-between ${
-                          movie.id ===
-                            pageObj.selectedMovieCastAndDirector.movieId &&
-                          pageObj.selectedMovieCastAndDirector.isSelected
-                            ? ""
-                            : "pl-1"
-                        } `}
-                      >
-                        <div className=" text-left text-sm font-bold mb-1   ">
-                          {movie?.title}
-                        </div>
-                        <div className={"w-12 h-12"}>
-                          <IconButton
-                            type="CLOSE"
-                            imgClassName={
-                              movie.id ===
-                                pageObj.selectedMovieCastAndDirector.movieId &&
-                              pageObj.selectedMovieCastAndDirector.isSelected
-                                ? "w-12 h-12"
-                                : " hidden"
-                            }
-                            onClick={onCloseSelectedMovie}
-                          />
-                        </div>
-                      </div>
-
-                      <div
-                        className={
-                          movie.id ===
-                            pageObj.selectedMovieCastAndDirector.movieId &&
-                          pageObj.selectedMovieCastAndDirector.isSelected
-                            ? "h-movie-overview overflow-y-auto scrollbar"
-                            : " px-1 pb-1"
-                        }
-                      >
-                        <div
-                          className={" text-left text-xs flex flex-wrap  mb-1"}
-                        >
-                          {renderMovieGenres(movie)}
-                        </div>
-                        <div
-                          className={`text-left text-xs mb-1 ${
-                            movie.id ===
-                              pageObj.selectedMovieCastAndDirector.movieId &&
-                            pageObj.selectedMovieCastAndDirector.isSelected
-                              ? " "
-                              : "overview-truncate"
-                          }`}
-                        >
-                          {movie?.overview}
-                        </div>
-                        {renderCasteAndDirector(movie)}
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                {renderMovieListUngrouped(pageObj?.movieListByName?.list)}
               </div>
-            </div>
-          )
+            )}
+          </div>
         )}
+
         <div className="h-24 pb-0_5 flex justify-center">
           <div className="h-full">
             {pageObj.movieListLoading &&
@@ -718,10 +905,13 @@ const PageMovieListing = () => {
       </div>
     );
   }, [
+    pageObj?.filter.filterBy,
     pageObj?.movieListLoading,
+    pageObj?.movieListByName,
     scrollLoadRequest.direction,
     pageObj?.movieList,
     pageObj.selectedMovieCastAndDirector,
+    pageObj?.selectedMovieCastAndDirectorLoading,
   ]);
 
   /*
@@ -749,7 +939,7 @@ const PageMovieListing = () => {
         />
       </div> */}
       {renderHeader()}
-      {renderMovies}
+      {renderMoviesListContainer}
     </div>
   );
 };

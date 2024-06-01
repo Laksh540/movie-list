@@ -17,6 +17,11 @@ class MovieService extends BaseService {
     let url = `/movie/${movieId}/credits?api_key=${TMDB_API_KEY}&cast.known_for_department=Acting`;
     return this.getRequest(url);
   }
+
+  searchMovieByName(search: string) {
+    let url = `/search/movie?api_key=${TMDB_API_KEY}${search}`;
+    return this.getRequest(url);
+  }
 }
 
 export default new MovieService();

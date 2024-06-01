@@ -75,6 +75,11 @@ svg {
 .align-center {
   align-items: center;
 }
+
+.flex-grow-1 {
+  flex-grow: 1;
+}
+
 /* Width */
 .w-fit {
   width: fit-content;
@@ -487,5 +492,21 @@ svg {
 }
 
 .movie-search-field {
-  width: 470px;
+  width: calc(100% - 214px);
+}
+@keyframes fadeInAnimation {
+  0% {
+    opacity: 0;
+  }
+  /* 50% {
+    opacity: 0.5;
+  } */
+  100% {
+    opacity: 1;
+  }
+}
+.loading-transition {
+  animation: fadeInAnimation ease 3s;
+  animation-iteration-count: 1;
+  animation-fill-mode: forwards;
 }
