@@ -119,11 +119,18 @@ const PageMovieListing = () => {
   }, []);
 
   useEffect(() => {
-    if (pageObj?.allGenres.length > 0) {
-      if (pageObj.movieList.length === 0) {
-        getMovies(2012);
+    let getData: any;
+    getData = setTimeout(() => {
+      if (pageObj?.allGenres.length > 0) {
+        if (pageObj.movieList.length === 0) {
+          getMovies(2012);
+        }
       }
-    }
+    }, 2000);
+
+    return () => {
+      clearTimeout(getData);
+    };
   }, [pageObj?.allGenres, pageObj?.filter.genres]);
 
   // useEffect(() => {
@@ -138,7 +145,7 @@ const PageMovieListing = () => {
     if (pageObj?.selectedMovieCastAndDirector.movieId) {
       debounce(() => {
         getMovieCredits(pageObj?.selectedMovieCastAndDirector?.movieId ?? 0);
-      }, 1000);
+      }, 500);
     }
   }, [pageObj?.selectedMovieCastAndDirector.movieId]);
 
@@ -174,7 +181,7 @@ const PageMovieListing = () => {
             getMoviesByName();
           }
         }
-      }, 2000);
+      }, 100);
     }
     if (isFirstRenderCheckToGetMovieList) {
       isFirstRenderCheckToGetMovieList = false;
@@ -458,7 +465,9 @@ const PageMovieListing = () => {
   };
   const handleChangeFilterBy = (option: any) => {
     console.log("on change option", option);
-
+    if (pageObj?.filter?.filterBy === option?.value) {
+      return;
+    }
     setPageObj((prevObj) => ({
       ...prevObj,
       filter: {
@@ -608,7 +617,7 @@ const PageMovieListing = () => {
       );
     }
     return (
-      <div className="flex">
+      <div className=" flex filters">
         <div className="w-140 flex-shrink-0 mb-1">
           <SimpleDropdown
             optionLabel="label"
@@ -656,8 +665,8 @@ const PageMovieListing = () => {
             </div>
           </div>
         ) : (
-          <div className="flex justify-center flex-grow-1">
-            <div className="ml-3 movie-search-field mb-1">
+          <div className="flex movie-search-field-container">
+            <div className=" movie-search-field mb-1">
               <SimpleInput
                 placeholder="Movie Name"
                 value={pageObj?.filter?.name}
@@ -671,7 +680,7 @@ const PageMovieListing = () => {
   };
   const renderHeader = () => {
     return (
-      <div className="bg-dark-gray px-1">
+      <div className="bg-dark-gray px-1 header-container">
         <div className="mb-2">
           <div className=" w-140">{renderCustomMovifixLogo()}</div>
         </div>
@@ -868,7 +877,7 @@ const PageMovieListing = () => {
         onScroll={onScrollMovieList}
       >
         {
-          <div className="h-24 pt-0_5 flex justify-center">
+          <div className="h-24 pt-0_5 flex justify-center loading-transition">
             <div className="h-full test">
               {pageObj?.movieListLoading &&
               scrollLoadRequest.direction === LOAD_DIRECTION.UP
@@ -894,7 +903,7 @@ const PageMovieListing = () => {
           </div>
         )}
 
-        <div className="h-24 pb-0_5 flex justify-center">
+        <div className="h-24 pb-0_5 flex justify-center loading-transition">
           <div className="h-full">
             {pageObj.movieListLoading &&
             scrollLoadRequest.direction === LOAD_DIRECTION.DOWN
