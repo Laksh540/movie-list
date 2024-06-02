@@ -16,6 +16,8 @@ import {
 } from "../../constants";
 import MovieService from "../../Services/MovieService";
 import noMoviePoster from "../../assets/no-movie-poster.jpg";
+import loading from "../../assets/loading.png";
+import loadingBlue from "../../assets/loading-blue.png";
 
 interface IGenres {
   id: number;
@@ -104,7 +106,8 @@ const PageMovieListing = () => {
       toggle: false,
       direction: LOAD_DIRECTION.DOWN,
     });
-
+  const [isScrollValueUpdateRequired, setIsScrollValueUpdateRequired] =
+    useState(false);
   const filterContainerRef = useRef<HTMLDivElement>(null);
   const movieListContainerRef = useRef<any>(null);
   const yearContainerRef = useRef<any[]>([]);
@@ -221,6 +224,13 @@ const PageMovieListing = () => {
     }
   }, [pageObj?.movieListByName?.list]);
 
+  useEffect(() => {
+    if (isScrollValueUpdateRequired) {
+      movieListContainerRef.current.scrollTop = 10;
+      setIsScrollValueUpdateRequired(false);
+    }
+  }, [pageObj?.movieList]);
+
   /*
     -----
     Service
@@ -296,7 +306,8 @@ const PageMovieListing = () => {
               "current scroll top",
               movieListContainerRef.current.scrollTop
             );
-            // movieListContainerRef.current.scrollTop = 30;
+            setIsScrollValueUpdateRequired(true);
+            // movieListContainerRef.current.scrollTop = 2;
             // yearContainerRef?.current?.[0]?.height;
             updatedMovieList = [
               { year: year, list: newList },
@@ -446,7 +457,7 @@ const PageMovieListing = () => {
     // e?.currentTarget?.scrollTop
     const { scrollTop, clientHeight, scrollHeight } = e?.currentTarget;
     console.log("scroll top ", scrollTop);
-
+    setIsScrollValueUpdateRequired(false);
     if (scrollTop + clientHeight >= scrollHeight - 20) {
       console.log("load direction down");
       setScrollLoadRequest((prevData) => ({
@@ -465,6 +476,10 @@ const PageMovieListing = () => {
   };
   const handleChangeFilterBy = (option: any) => {
     console.log("on change option", option);
+    setTimeout(() => {
+      movieListContainerRef.current.scrollTop = 2;
+    }, 100);
+
     if (pageObj?.filter?.filterBy === option?.value) {
       return;
     }
@@ -709,7 +724,13 @@ const PageMovieListing = () => {
       return <></>;
     }
     if (pageObj.selectedMovieCastAndDirectorLoading) {
-      return <div className=" h-100 text-sm">Loading...</div>;
+      return (
+        <div className=" h-100 text-sm flex justify-center">
+          <div className="w-20 h-20">
+            <img src={loading} className="w-20 h-20  icn-spinner" />
+          </div>
+        </div>
+      );
     }
     return (
       <div className="">
@@ -878,11 +899,15 @@ const PageMovieListing = () => {
       >
         {
           <div className="h-24 pt-0_5 flex justify-center loading-transition">
-            <div className="h-full test">
+            <div className="h-full ">
               {pageObj?.movieListLoading &&
-              scrollLoadRequest.direction === LOAD_DIRECTION.UP
-                ? "Loading..."
-                : ""}
+              scrollLoadRequest.direction === LOAD_DIRECTION.UP ? (
+                <div className="w-20 h-20 flex justify-center">
+                  <img src={loadingBlue} className="w-20 h-20  icn-spinner" />
+                </div>
+              ) : (
+                ""
+              )}
             </div>
           </div>
         }
@@ -906,9 +931,13 @@ const PageMovieListing = () => {
         <div className="h-24 pb-0_5 flex justify-center loading-transition">
           <div className="h-full">
             {pageObj.movieListLoading &&
-            scrollLoadRequest.direction === LOAD_DIRECTION.DOWN
-              ? "Loading..."
-              : ""}
+            scrollLoadRequest.direction === LOAD_DIRECTION.DOWN ? (
+              <div className="w-20 h-20 flex justify-center">
+                <img src={loadingBlue} className="w-20 h-20  icn-spinner" />
+              </div>
+            ) : (
+              ""
+            )}
           </div>
         </div>
       </div>
