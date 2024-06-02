@@ -9,7 +9,7 @@
 3. To Open the Project in the Vs code instance Run the Following command
 ### `code .` 
 
-4.To  visit the Correct Branch  Run the following command
+4. In  new opened VS code instance run the following command To  visit the Correct Branch 
 ### `git checkout master`
 
 5. Run the following command To install the Necessary dependency
