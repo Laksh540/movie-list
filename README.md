@@ -4,7 +4,7 @@
  ### `git clone https://github.com/Laksh540/movie-list.git`
  
 2. Run the following command to  visit the Directory
- ### `cd .\movie-list-app\`
+ ### `cd .\movie-list\`
 
 3. To Open the Project in the Vs code instance Run the Following command
 ### `code .` 
